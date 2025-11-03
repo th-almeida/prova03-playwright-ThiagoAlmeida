@@ -14,9 +14,11 @@ test.describe('Philosophy Coffee - Formulário de Contato', () => {
 
   test.beforeEach(async ({ page }) => {
     contactPage = new PhilosophyCoffeeContactPage(page);
-    await page.goto(BASE_URL);
-    // Aguarda o carregamento completo da página
-    await page.waitForLoadState('networkidle');
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    // Aguarda o campo de nome estar visível (indicador que o form carregou)
+    await contactPage.contactElements
+      .getNameField()
+      .waitFor({ timeout: 15000 });
   });
 
   test('CT001 - Enviar mensagem de contato com todos os campos preenchidos', async ({
@@ -83,8 +85,7 @@ test.describe('Philosophy Coffee - Formulário de Contato', () => {
       { page, test }
     );
 
-    // Aguarda e valida a mensagem de sucesso
-    await page.waitForTimeout(3000);
+    // Valida a mensagem de sucesso
     await contactPage.validarMensagemSucesso();
   });
 });
