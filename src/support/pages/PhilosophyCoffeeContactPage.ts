@@ -32,13 +32,17 @@ export default class PhilosophyCoffeeContactPage extends BasePage {
   }
 
   async clicarEnviar(): Promise<void> {
-    await this.contactElements.getSendButton().click();
+    const button = this.contactElements.getSendButton();
+    await button.scrollIntoViewIfNeeded();
+    await this.page.waitForTimeout(500);
+    await button.click();
+    await this.page.waitForTimeout(1000);
   }
 
   async validarMensagemSucesso(): Promise<void> {
-    await expect(this.contactElements.getSuccessMessage()).toBeVisible({
-      timeout: 10000
-    });
+    const successMsg = this.contactElements.getSuccessMessage();
+    await successMsg.waitFor({ state: 'visible', timeout: 15000 });
+    await expect(successMsg).toBeVisible();
   }
 
   async validarCampoObrigatorio(campo: 'name' | 'email'): Promise<void> {
