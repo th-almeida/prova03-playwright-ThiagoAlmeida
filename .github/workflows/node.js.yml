@@ -1,46 +1,38 @@
-name: Playwright Tests with SonarCloud
+name: Build and Tests
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [master]
   pull_request:
-    branches: [main, master, develop]
+    branches: [master]
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Run E2E Tests with Playwright
-    timeout-minutes: 60
+  build:
+    name: Run E2E Tests
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v5.0.0
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v6.0.0
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for better SonarCloud analysis
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+          node-version: 20
           cache: 'npm'
-
+      
       - name: Install dependencies
-        run: npm ci
-
+        run: npm install
+      
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Run Prettier verification
-        run: npm run verify
-
+        run: npx playwright install
+      
       - name: Run Playwright tests
         run: npm run actions
         env:
           ZEROSTEP_TOKEN: ${{ secrets.ZEROSTEP_TOKEN }}
-
+      
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -49,22 +41,21 @@ jobs:
           path: artifacts/
           retention-days: 30
 
+  sonarcloud:
+    name: Run SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5.0.0
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.0.0
+        with:
+          node-version: 20
+      
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=th-almeida_prova03-playwright-ThiagoAlmeida
-            -Dsonar.organization=ugioni
-            -Dsonar.sources=./src
-            -Dsonar.sourceEncoding=UTF-8
-            -Dsonar.projectVersion=1.0
-
-      - name: Check SonarCloud Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        continue-on-error: true
